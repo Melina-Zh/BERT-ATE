@@ -198,6 +198,11 @@ def convert_examples_to_seq_features(examples, label_list, tokenizer,
     features = []
     max_seq_length = -1
     examples_tokenized = []
+    with open("./data/domain.txt","r") as domainf:
+        domain_word = domainf.readline().strip()
+        print("domain_word")
+        print(domain_word)
+
     for (ex_index, example) in enumerate(examples):
         tokens_a = []
         labels_a = []

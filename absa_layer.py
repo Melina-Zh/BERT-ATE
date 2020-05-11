@@ -438,7 +438,7 @@ class BertABSATagger(BertPreTrainedModel):
         # the hidden states of the last Bert Layer, shape: (bsz, seq_len, hsz)
         tagger_input = outputs[0]
         tagger_input = self.bert_dropout(tagger_input)
-        #print("tagger_input.shape:", tagger_input.shape)
+        print("tagger_input.shape:", tagger_input.shape)
         if self.tagger is None or self.tagger_config.absa_type == 'crf':
             # regard classifier as the tagger
             logits = self.classifier(tagger_input)
