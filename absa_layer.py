@@ -431,12 +431,29 @@ class BertABSATagger(BertPreTrainedModel):
             penultimate_hidden_size = self.tagger_config.hidden_size
         self.classifier = nn.Linear(penultimate_hidden_size, bert_config.num_labels)
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None,
+    def forward(self, input_ids, domain_feature, token_type_ids=None, attention_mask=None, labels=None,
                 position_ids=None, head_mask=None):
+
+        ##domain part
+
+        domain_id = torch.tensor(domain_feature[0])
+        domain_mask = torch.tensor(domain_feature[1])
+        domain_seg_id = torch.tensor(domain_feature[2])
+
+        domain_id = domain_id.expand(input_ids.size(0), 3)
+        domain_mask = domain_mask.expand(input_ids.size(0), 3)
+        domain_seg_id = domain_seg_id.expand(input_ids.size(0), 3)
+
+        input_ids = torch.cat((domain_id, input_ids), 1)
+
+        attention_mask = torch.cat((domain_mask, attention_mask), 1)
+        token_type_ids = torch.cat((domain_seg_id, token_type_ids), 1)
+
         outputs = self.bert(input_ids, position_ids=position_ids, token_type_ids=token_type_ids,
                             attention_mask=attention_mask, head_mask=head_mask)
         # the hidden states of the last Bert Layer, shape: (bsz, seq_len, hsz)
-        tagger_input = outputs[0]
+        tagger_input = outputs[0][:, 3:, :]
+        attention_mask = attention_mask[:, 3:]
         tagger_input = self.bert_dropout(tagger_input)
         print("tagger_input.shape:", tagger_input.shape)
         if self.tagger is None or self.tagger_config.absa_type == 'crf':
@@ -465,7 +482,7 @@ class BertABSATagger(BertPreTrainedModel):
             if self.tagger_config.absa_type != 'crf':
                 loss_fct = CrossEntropyLoss()
                 if attention_mask is not None:
-                    active_loss = attention_mask.view(-1) == 1
+                    active_loss = attention_mask.contiguous().view(-1) == 1
                     active_logits = logits.view(-1, self.num_labels)[active_loss]
                     active_labels = labels.view(-1)[active_loss]
                     loss = loss_fct(active_logits, active_labels)

@@ -131,7 +131,7 @@ def init_args():
     return args
 
 
-def train(args, train_dataset, model, tokenizer):
+def train(args, train_dataset, model, tokenizer, domain_feature):
     """ Train the model """
     if args.local_rank in [-1, 0]:
         tb_writer = SummaryWriter()
@@ -181,7 +181,8 @@ def train(args, train_dataset, model, tokenizer):
             inputs = {'input_ids':      batch[0],
                       'attention_mask': batch[1],
                       'token_type_ids': batch[2] if args.model_type in ['bert', 'xlnet'] else None,  # XLM don't use segment_ids
-                      'labels':         batch[3]}
+                      'labels':         batch[3],
+                      'domain_feature': domain_feature}
             ouputs = model(**inputs)
             # loss with attention mask
             loss = ouputs[0]  # model outputs are always tuple in pytorch-transformers (see doc)
@@ -312,11 +313,14 @@ def evaluate(args, model, tokenizer, mode, prefix=""):
 def load_and_cache_examples(args, task, tokenizer, mode='train'):
     processor = processors[task]()
     # Load data features from cache or dataset file
+    cached_features_file = ''
+    '''
     cached_features_file = os.path.join(args.data_dir, 'cached_{}_{}_{}_{}'.format(
         mode,
         list(filter(None, args.model_name_or_path.split('/'))).pop(),
         str(args.max_seq_length),
         str(task)))
+    '''
     if os.path.exists(cached_features_file):
         print("cached_features_file:", cached_features_file)
         features = torch.load(cached_features_file)
@@ -331,16 +335,16 @@ def load_and_cache_examples(args, task, tokenizer, mode='train'):
             examples = processor.get_test_examples(args.data_dir, args.tagging_schema)
         else:
             raise Exception("Invalid data mode %s..." % mode)
-        features = convert_examples_to_seq_features(examples=examples, label_list=label_list, tokenizer=tokenizer,
+        features, domain_feature_raw = convert_examples_to_seq_features(examples=examples, label_list=label_list, tokenizer=tokenizer,
                                                     cls_token_at_end=bool(args.model_type in ['xlnet']),
                                                     cls_token=tokenizer.cls_token,
                                                     sep_token=tokenizer.sep_token,
                                                     cls_token_segment_id=2 if args.model_type in ['xlnet'] else 0,
                                                     pad_on_left=bool(args.model_type in ['xlnet']),
                                                     pad_token_segment_id=4 if args.model_type in ['xlnet'] else 0)
-        if args.local_rank in [-1, 0]:
+        #if args.local_rank in [-1, 0]:
             #logger.info("Saving features into cached file %s", cached_features_file)
-            torch.save(features, cached_features_file)
+            #torch.save(features, cached_features_file)
 
     # Convert to Tensors and build dataset
     all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
@@ -351,7 +355,7 @@ def load_and_cache_examples(args, task, tokenizer, mode='train'):
     # used in evaluation
     all_evaluate_label_ids = [f.evaluate_label_ids for f in features]
     dataset = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
-    return dataset, all_evaluate_label_ids
+    return dataset, all_evaluate_label_ids, domain_feature_raw
 
 
 def main():
@@ -421,8 +425,8 @@ def main():
 
     # Training
     if args.do_train:
-        train_dataset, train_evaluate_label_ids = load_and_cache_examples(args, args.task_name, tokenizer, mode='train')
-        global_step, tr_loss = train(args, train_dataset, model, tokenizer)
+        train_dataset, train_evaluate_label_ids, domain_feature = load_and_cache_examples(args, args.task_name, tokenizer, mode='train')
+        global_step, tr_loss = train(args, train_dataset, model, tokenizer, domain_feature)
 
     if args.do_train and (args.local_rank == -1 or dist.get_rank() == 0):
         # Create output directory if needed

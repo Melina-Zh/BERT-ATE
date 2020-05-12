@@ -198,10 +198,16 @@ def convert_examples_to_seq_features(examples, label_list, tokenizer,
     features = []
     max_seq_length = -1
     examples_tokenized = []
+    # domain word part
     with open("./data/domain.txt","r") as domainf:
         domain_word = domainf.readline().strip()
-        print("domain_word")
-        print(domain_word)
+    domain_words = tokenizer.tokenize(domain_word)
+    domain_words_tokens = [cls_token] + domain_words +[sep_token]
+    domain_words_segment_ids = [sequence_a_segment_id] * len(domain_words_tokens)
+
+    domain_words_ids = tokenizer.convert_tokens_to_ids(domain_words_tokens)
+    domain_words_mask = [1] * len(domain_words_ids)
+    domain_feature = (domain_words_ids, domain_words_mask, domain_words_segment_ids)
 
     for (ex_index, example) in enumerate(examples):
         tokens_a = []
@@ -228,6 +234,7 @@ def convert_examples_to_seq_features(examples, label_list, tokenizer,
             max_seq_length = len(tokens_a)
     # count on the [CLS] and [SEP]
     max_seq_length += 2
+    #max_seq_length += len(domain_words_tokens)
     #max_seq_length = 128
     for ex_index, (tokens_a, labels_a, evaluate_label_ids) in enumerate(examples_tokenized):
         #tokens_a = tokenizer.tokenize(example.text_a)
@@ -238,19 +245,9 @@ def convert_examples_to_seq_features(examples, label_list, tokenizer,
         #    tokens_a = tokens_a[:(max_seq_length - 2)]
         #    labels_a = labels_a
         tokens = tokens_a + [sep_token]
-        segment_ids = [sequence_a_segment_id] * len(tokens)
+        segment_ids = [sequence_b_segment_id] * len(tokens)
         labels = labels_a + ['O']
-        if cls_token_at_end:
-            # evaluate label ids not change
-            tokens = tokens + [cls_token]
-            segment_ids = segment_ids + [cls_token_segment_id]
-            labels = labels + ['O']
-        else:
-            # right shift 1 for evaluate label ids
-            tokens = [cls_token] + tokens
-            segment_ids = [cls_token_segment_id] + segment_ids
-            labels = ['O'] + labels
-            evaluate_label_ids += 1
+
         input_ids = tokenizer.convert_tokens_to_ids(tokens)
         input_mask = [1 if mask_padding_with_zero else 0] * len(input_ids)
         # Zero-pad up to the sequence length.
@@ -297,7 +294,7 @@ def convert_examples_to_seq_features(examples, label_list, tokenizer,
                              label_ids=label_ids,
                              evaluate_label_ids=evaluate_label_ids))
     print("maximal sequence length is", max_seq_length)
-    return features
+    return features, domain_feature
 
 
 def convert_examples_to_features(examples, label_list, max_seq_length,
