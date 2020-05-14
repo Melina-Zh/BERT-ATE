@@ -39,6 +39,8 @@ def set_seed(args):
 
 def init_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--branch_name", default=None, type=str, required=True,
+                        help="The name of different experiments")
     parser.add_argument("--data_dir", default=None, type=str, required=True,
                         help="The input data dir. Should contain the .tsv files (or other data files) for the task.")
     parser.add_argument("--model_type", default=None, type=str, required=True,
@@ -120,7 +122,7 @@ def init_args():
     parser.add_argument('--MASTER_ADDR', type=str)
     parser.add_argument('--MASTER_PORT', type=str)
     args = parser.parse_args()
-    output_dir = '%s-%s-%s-%s' % (args.model_type, args.absa_type, args.task_name, args.tfm_mode)
+    output_dir = '%s-%s-%s-%s-%s' % (args.branch_name, args.model_type, args.absa_type, args.task_name, args.tfm_mode)
 
     if args.fix_tfm:
         output_dir = '%s-fix' % output_dir

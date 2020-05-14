@@ -1,13 +1,13 @@
 import os
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
+branch_name = 'DA-BERT'
 seed_numbers = [42, 593, 1774, 65336, 189990]
 model_type = 'bert'
 absa_type = 'linear'
 tfm_mode = 'finetune'
 fix_tfm = 0
-task_name = 'laptop14'
+task_name = 'rest_total'
 warmup_steps = 0
 overfit = 0
 if task_name == 'laptop14':
@@ -18,14 +18,14 @@ else:
     raise Exception("Unsupported dataset %s!!!" % task_name)
 
 for run_id, seed in enumerate(seed_numbers):
-    command = "python main.py --model_type %s --absa_type %s --tfm_mode %s --fix_tfm %s " \
+    command = "python main.py --branch_name %s --model_type %s --absa_type %s --tfm_mode %s --fix_tfm %s " \
               "--model_name_or_path ./bert  --data_dir ./data/%s --task_name %s " \
               "--per_gpu_train_batch_size %s --per_gpu_eval_batch_size 8 --learning_rate 2e-5 " \
               "--max_steps 1500 --warmup_steps %s --do_train --do_eval --do_lower_case " \
               "--seed %s --tagging_schema BIEOS --overfit %s " \
               "--overwrite_output_dir --eval_all_checkpoints --MASTER_ADDR localhost --MASTER_PORT 28512" % (
-        model_type, absa_type, tfm_mode, fix_tfm, task_name, task_name, train_batch_size, warmup_steps, seed, overfit)
-    output_dir = '%s-%s-%s-%s' % (model_type, absa_type, task_name, tfm_mode)
+      branch_name, model_type, absa_type, tfm_mode, fix_tfm, task_name, task_name, train_batch_size, warmup_steps, seed, overfit)
+    output_dir = '%s-%s-%s-%s-%s' % (branch_name, model_type, absa_type, task_name, tfm_mode)
     if fix_tfm:
         output_dir = '%s-fix' % output_dir
     if overfit:

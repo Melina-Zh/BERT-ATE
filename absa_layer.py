@@ -436,16 +436,21 @@ class BertABSATagger(BertPreTrainedModel):
 
         ##domain part
 
-        domain_id = torch.tensor(domain_feature[0])
-        domain_mask = torch.tensor(domain_feature[1])
-        domain_seg_id = torch.tensor(domain_feature[2])
+        domain_id = torch.tensor(domain_feature[0], dtype=torch.long)
+        domain_mask = torch.tensor(domain_feature[1], dtype=torch.long)
+        domain_seg_id = torch.tensor(domain_feature[2], dtype=torch.long)
 
         domain_id = domain_id.expand(input_ids.size(0), 3)
         domain_mask = domain_mask.expand(input_ids.size(0), 3)
         domain_seg_id = domain_seg_id.expand(input_ids.size(0), 3)
+        domain_id, domain_mask, domain_seg_id = domain_id.cuda(), domain_mask.cuda(), domain_seg_id.cuda()
+    
+
+        print(domain_id.is_cuda)
+        print(input_ids.is_cuda)
 
         input_ids = torch.cat((domain_id, input_ids), 1)
-
+        
         attention_mask = torch.cat((domain_mask, attention_mask), 1)
         token_type_ids = torch.cat((domain_seg_id, token_type_ids), 1)
 
