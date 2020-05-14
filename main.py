@@ -245,7 +245,7 @@ def evaluate(args, model, tokenizer, mode, prefix=""):
 
     results = {}
     for eval_task, eval_output_dir in zip(eval_task_names, eval_outputs_dirs):
-        eval_dataset, eval_evaluate_label_ids = load_and_cache_examples(args, eval_task, tokenizer, mode=mode)
+        eval_dataset, eval_evaluate_label_ids, domain_feature = load_and_cache_examples(args, eval_task, tokenizer, mode=mode)
 
         if not os.path.exists(eval_output_dir) and args.local_rank in [-1, 0]:
             os.makedirs(eval_output_dir)
@@ -270,7 +270,8 @@ def evaluate(args, model, tokenizer, mode, prefix=""):
                 inputs = {'input_ids':      batch[0],
                           'attention_mask': batch[1],
                           'token_type_ids': batch[2] if args.model_type in ['bert', 'xlnet'] else None,  # XLM don't use segment_ids
-                          'labels':         batch[3]}
+                          'labels':         batch[3],
+                          'domain_feature': domain_feature}
                 outputs = model(**inputs)
                 # logits: (bsz, seq_len, label_size)
                 # here the loss is the masked loss

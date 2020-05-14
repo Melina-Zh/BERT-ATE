@@ -444,10 +444,7 @@ class BertABSATagger(BertPreTrainedModel):
         domain_mask = domain_mask.expand(input_ids.size(0), 3)
         domain_seg_id = domain_seg_id.expand(input_ids.size(0), 3)
         domain_id, domain_mask, domain_seg_id = domain_id.cuda(), domain_mask.cuda(), domain_seg_id.cuda()
-    
 
-        print(domain_id.is_cuda)
-        print(input_ids.is_cuda)
 
         input_ids = torch.cat((domain_id, input_ids), 1)
         
@@ -460,7 +457,7 @@ class BertABSATagger(BertPreTrainedModel):
         tagger_input = outputs[0][:, 3:, :]
         attention_mask = attention_mask[:, 3:]
         tagger_input = self.bert_dropout(tagger_input)
-        print("tagger_input.shape:", tagger_input.shape)
+        #print("tagger_input.shape:", tagger_input.shape)
         if self.tagger is None or self.tagger_config.absa_type == 'crf':
             # regard classifier as the tagger
             logits = self.classifier(tagger_input)

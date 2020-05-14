@@ -7,7 +7,7 @@ model_type = 'bert'
 absa_type = 'linear'
 tfm_mode = 'finetune'
 fix_tfm = 0
-task_name = 'rest_total'
+task_name = 'laptop14'
 warmup_steps = 0
 overfit = 0
 if task_name == 'laptop14':
